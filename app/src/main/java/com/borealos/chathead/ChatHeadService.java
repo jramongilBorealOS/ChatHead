@@ -69,6 +69,7 @@ public class ChatHeadService extends Service {
             private int lastAction;
             private float initialTouchX;
             private float initialTouchY;
+            private long initialTouchTime, finalTouchTime;
 
             @Override
             public boolean onTouch(View view, MotionEvent motionEvent) {
@@ -76,6 +77,8 @@ public class ChatHeadService extends Service {
                 switch (motionEvent.getAction()) {
 
                     case MotionEvent.ACTION_DOWN:
+
+                        initialTouchTime = System.currentTimeMillis();
 
                         initialX = params.x;
                         initialY = params.y;
@@ -89,6 +92,8 @@ public class ChatHeadService extends Service {
 
                     case MotionEvent.ACTION_UP:
 
+                        finalTouchTime = System.currentTimeMillis();
+
                         removeView.setVisibility(View.GONE);
 
                         //calculate diff if it is a move or a touch
@@ -100,15 +105,16 @@ public class ChatHeadService extends Service {
                         Log.d("ChatHead", "Last: " + Integer.toString(lastAction));
 
 
-                        if ((Math.abs(diffX) < 5 && Math.abs(diffY) < 5)) {//&& lastAction == MotionEvent.ACTION_DOWN) {
+                        if ((Math.abs(diffX) < 5 && Math.abs(diffY) < 5)) { //chat head not moved
 
-                            //if (lastAction == MotionEvent.ACTION_DOWN) { //It is a click(touch) --> go to chat
+                            if (finalTouchTime - initialTouchTime < 500) //It is a click(touch) --> go to chat
 
                             /*Intent intent = new Intent(ChatHeadService.this, ChatActivity.class);
                             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                             startActivity(intent);*/
 
                                 stopSelf(); //stop service and remove chat head (calls onDestroy)
+
 
                         }
 
@@ -117,12 +123,14 @@ public class ChatHeadService extends Service {
 
                     case MotionEvent.ACTION_MOVE:
 
+                        if (System.currentTimeMillis() - initialTouchTime >= 500)
+                            removeView.setVisibility(View.VISIBLE);
+
                         params.x = (int) (initialX + motionEvent.getRawX() - initialTouchX);
                         params.y = (int) (initialY + motionEvent.getRawY() - initialTouchY);
 
                         //Update UI
                         mWindowManager.updateViewLayout(chatHead, params);
-                        removeView.setVisibility(View.VISIBLE);
 
                         lastAction = motionEvent.getAction();
 
