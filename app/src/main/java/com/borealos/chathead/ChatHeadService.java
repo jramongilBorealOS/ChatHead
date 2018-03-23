@@ -33,7 +33,21 @@ public class ChatHeadService extends Service {
         mWindowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
 
         chatHead = LayoutInflater.from(this).inflate(R.layout.chathead, null);
+        removeView = LayoutInflater.from(this).inflate(R.layout.remove, null);
 
+        final WindowManager.LayoutParams paramsRemove = new WindowManager.LayoutParams(
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.TYPE_PHONE, //allows it to be on top of the Window
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+                        WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH |
+                        WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
+                PixelFormat.TRANSLUCENT);
+
+        paramsRemove.gravity = Gravity.BOTTOM | Gravity.CENTER;
+        removeView.setVisibility(View.GONE);
+
+        mWindowManager.addView(removeView, paramsRemove);
 
         final WindowManager.LayoutParams params = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
@@ -75,6 +89,8 @@ public class ChatHeadService extends Service {
 
                     case MotionEvent.ACTION_UP:
 
+                        removeView.setVisibility(View.GONE);
+
                         //calculate diff if it is a move or a touch
                         int diffX = (int) (motionEvent.getRawX() - initialTouchX);
                         int diffY = (int) (motionEvent.getRawY() - initialTouchY);
@@ -92,8 +108,7 @@ public class ChatHeadService extends Service {
                             intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
                             startActivity(intent);*/
 
-                                Toast.makeText(getApplicationContext(), "Stop", Toast.LENGTH_SHORT).show();
-                                stopSelf(); //stop service and remove chat head
+                                stopSelf(); //stop service and remove chat head (calls onDestroy)
 
                         }
 
@@ -107,6 +122,7 @@ public class ChatHeadService extends Service {
 
                         //Update UI
                         mWindowManager.updateViewLayout(chatHead, params);
+                        removeView.setVisibility(View.VISIBLE);
 
                         lastAction = motionEvent.getAction();
 
@@ -125,7 +141,8 @@ public class ChatHeadService extends Service {
     @Override
     public void onDestroy() {
         super.onDestroy();
-
+        Log.d("ChatHead", "onDestroy");
         if (chatHead != null) mWindowManager.removeView(chatHead);
+        if (removeView != null) mWindowManager.removeView(removeView);
     }
 }
