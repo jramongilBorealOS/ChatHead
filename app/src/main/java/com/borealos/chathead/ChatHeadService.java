@@ -4,6 +4,7 @@ import android.app.Service;
 import android.content.Intent;
 import android.graphics.PixelFormat;
 import android.os.IBinder;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -18,17 +19,12 @@ import android.widget.Toast;
 public class ChatHeadService extends Service {
 
     private WindowManager mWindowManager;
-    private View chatHead;
+    private View chatHead, removeView;
 
     @Override
     public IBinder onBind(Intent intent) {
         return null;
     }
-
-    public ChatHeadService() {
-
-    }
-
 
     @Override
     public void onCreate() {
@@ -83,7 +79,12 @@ public class ChatHeadService extends Service {
                         int diffX = (int) (motionEvent.getRawX() - initialTouchX);
                         int diffY = (int) (motionEvent.getRawY() - initialTouchY);
 
-                        if ((diffX < 5 && diffY < 5) && lastAction == MotionEvent.ACTION_DOWN) {
+                        Log.d("ChatHead", Integer.toString(diffX));
+                        Log.d("ChatHead", Integer.toString(diffY));
+                        Log.d("ChatHead", "Last: " + Integer.toString(lastAction));
+
+
+                        if ((Math.abs(diffX) < 5 && Math.abs(diffY) < 5)) {//&& lastAction == MotionEvent.ACTION_DOWN) {
 
                             //if (lastAction == MotionEvent.ACTION_DOWN) { //It is a click(touch) --> go to chat
 
