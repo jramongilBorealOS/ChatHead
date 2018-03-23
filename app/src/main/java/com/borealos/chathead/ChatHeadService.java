@@ -1,10 +1,14 @@
 package com.borealos.chathead;
 
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.graphics.PixelFormat;
+import android.graphics.Point;
 import android.os.IBinder;
+import android.util.DisplayMetrics;
 import android.util.Log;
+import android.view.Display;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -105,7 +109,7 @@ public class ChatHeadService extends Service {
                         Log.d("ChatHead", "Last: " + Integer.toString(lastAction));
 
 
-                        if ((Math.abs(diffX) < 5 && Math.abs(diffY) < 5)) { //chat head not moved
+                        if (Math.abs(diffX) < 5 && Math.abs(diffY) < 5) { //chat head not moved
 
                             if (finalTouchTime - initialTouchTime < 500) //It is a click(touch) --> go to chat
 
@@ -132,6 +136,17 @@ public class ChatHeadService extends Service {
                         //Update UI
                         mWindowManager.updateViewLayout(chatHead, params);
 
+
+                        if(chatHeadRemove()) {
+
+                            /*removeView.getLayoutParams().width *= 1.5;
+                            removeView.getLayoutParams().height *= 1.5;
+
+                            mWindowManager.updateViewLayout(removeView, paramsRemove);*/
+                            Log.d("ChatHead", "Remove");
+
+                        }
+
                         lastAction = motionEvent.getAction();
 
                         return true;
@@ -142,6 +157,54 @@ public class ChatHeadService extends Service {
 
             }
         });
+
+    }
+
+    //detect chat head to be removed by user
+    private boolean chatHeadRemove () {
+
+        int[] posChatHead = new int[2], posRemove = new int[2];
+        int chatHeadX, chatHeadY, removeX, removeY;
+
+        chatHead.getLocationOnScreen(posChatHead);
+        removeView.getLocationOnScreen(posRemove);
+
+        chatHeadX = posChatHead[0];
+        chatHeadY = posChatHead[1];
+        removeX = posRemove[0];
+        removeY = posRemove[1];
+
+        /*Log.d("ChatHead", "chatHeadX: " + chatHeadX);
+        Log.d("ChatHead", "chatHeadY: " + chatHeadY);
+        Log.d("ChatHead", "removeX: " + removeX);
+        Log.d("ChatHead", "removeY: " + removeY);*/
+
+        if (chatHeadY + chatHead.getHeight() >= removeY &&
+                chatHeadX <= removeX + removeView.getWidth() &&
+                chatHeadX + chatHead.getWidth() >= removeX) return true;
+
+
+
+        return false;
+
+
+    }
+
+    private int getWidthScreen() {
+
+        Display display = mWindowManager.getDefaultDisplay();
+        Point size = new Point();
+        display.getSize(size);
+        return size.x;
+
+    }
+
+    private int getHeightScreen() {
+
+        Display display = mWindowManager.getDefaultDisplay();
+        Point size = new Point();
+        display.getSize(size);
+        return size.y;
 
     }
 
