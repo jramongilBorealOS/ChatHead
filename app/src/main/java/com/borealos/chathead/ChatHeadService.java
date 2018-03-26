@@ -28,6 +28,9 @@ public class ChatHeadService extends Service {
     private View chatHead, removeView;
     private boolean insideRemove = false;
     private int initialRemoveY;
+    private Point sizeWindow = new Point();
+    private ImageView removeImg;
+    private int remove_img_width, remove_img_height;
 
     @Override
     public IBinder onBind(Intent intent) {
@@ -40,8 +43,11 @@ public class ChatHeadService extends Service {
 
         mWindowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
 
+        mWindowManager.getDefaultDisplay().getSize(sizeWindow);
+
         chatHead = LayoutInflater.from(this).inflate(R.layout.chathead, null);
         removeView = LayoutInflater.from(this).inflate(R.layout.remove, null);
+        removeImg = removeView.findViewById(R.id.remove_img);
 
         final WindowManager.LayoutParams paramsRemove = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
@@ -52,8 +58,8 @@ public class ChatHeadService extends Service {
                         WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
                 PixelFormat.TRANSLUCENT);
 
-        paramsRemove.gravity = Gravity.BOTTOM | Gravity.CENTER;
-        initialRemoveY = paramsRemove.y;
+        paramsRemove.gravity = Gravity.BOTTOM | Gravity.CENTER_HORIZONTAL;
+        //initialRemoveY = paramsRemove.y;
         removeView.setVisibility(View.GONE);
 
         mWindowManager.addView(removeView, paramsRemove);
@@ -94,6 +100,9 @@ public class ChatHeadService extends Service {
 
                         initialTouchX = motionEvent.getRawX();
                         initialTouchY = motionEvent.getRawY();
+
+                        remove_img_width = removeImg.getLayoutParams().width;
+                        remove_img_height = removeImg.getLayoutParams().height;
 
                         lastAction = motionEvent.getAction();
 
@@ -145,7 +154,7 @@ public class ChatHeadService extends Service {
                         mWindowManager.updateViewLayout(chatHead, params);
 
 
-                        if(chatHeadRemove()) {
+                        if(chatHeadRemove(motionEvent.getRawX(), motionEvent.getRawY())) {
 
                             if (!insideRemove) {
 
@@ -154,27 +163,46 @@ public class ChatHeadService extends Service {
                             /*removeView.getLayoutParams().width *= 1.5;
                             removeView.getLayoutParams().height *= 1.5;*/
 
-                                paramsRemove.y += 20;
+                                //paramsRemove.y += 20;
 
-                                int[] posRemove = new int [2];
+                                int removeX = (int) (sizeWindow.x - (remove_img_height * 1.5) / 2);
+                                int removeY = (int) (sizeWindow.y - ((remove_img_width * 1.5) + getStatusBarHeight()));
 
-                                /*removeView.getLocationOnScreen(posRemove);
+                                if(removeImg.getLayoutParams().height == remove_img_height){
+                                    removeImg.getLayoutParams().height = (int) (remove_img_height * 1.5);
+                                    removeImg.getLayoutParams().width = (int) (remove_img_width * 1.5);
 
-                                params.x = posRemove[0];
-                                params.y = posRemove[1];*/
+                                    //WindowManager.LayoutParams param_remove = (WindowManager.LayoutParams) removeView.getLayoutParams();
+                                    params.x = removeX;
+                                    params.y = removeY;
 
+                                    mWindowManager.updateViewLayout(chatHead, params);
+                                }
+
+
+
+                                params.x = removeX + (Math.abs(removeView.getWidth() - chatHead.getWidth()) / 2);
+                                params.y = removeY + (Math.abs(removeView.getHeight() - chatHead.getHeight())) / 2;
 
                                 insideRemove = true;
 
                                 mWindowManager.updateViewLayout(chatHead, params);
                                 mWindowManager.updateViewLayout(removeView, paramsRemove);
+                                break;
                             }
 
                         } else  {
 
-                            paramsRemove.y = initialRemoveY;
-                            mWindowManager.updateViewLayout(removeView, paramsRemove);
                             insideRemove = false;
+
+                            //reset removeView aspect
+                            paramsRemove.y = initialRemoveY;
+                            removeImg.getLayoutParams().width = remove_img_width;
+                            removeImg.getLayoutParams().height = remove_img_height;
+
+                            mWindowManager.updateViewLayout(removeView, paramsRemove);
+
+
 
                         }
 
@@ -194,27 +222,36 @@ public class ChatHeadService extends Service {
     }
 
     //detect chat head to be removed by user
-    private boolean chatHeadRemove () {
+    private boolean chatHeadRemove (float chatHeadX, float chatHeadY) {
 
-        int[] posChatHead = new int[2], posRemove = new int[2];
-        int chatHeadX, chatHeadY, removeX, removeY;
+        //int[] posChatHead = new int[2], posRemove = new int[2];
+        //int chatHeadX, chatHeadY, removeX, removeY;
 
-        chatHead.getLocationOnScreen(posChatHead);
-        removeView.getLocationOnScreen(posRemove);
+        //define boundaries to detect remove
+        int boundLeft = (int) (sizeWindow.x / 2 - remove_img_width * 1.5);
+        int boundRight =(int) (sizeWindow.x / 2 + remove_img_width * 1.5);
+        int boundTop = (int) (sizeWindow.y - remove_img_height * 1.5);
 
-        chatHeadX = posChatHead[0];
+        //chatHead.getLocationOnScreen(posChatHead);
+        //removeView.getLocationOnScreen(posRemove);
+
+        /*chatHeadX = posChatHead[0];
         chatHeadY = posChatHead[1];
         removeX = posRemove[0];
-        removeY = posRemove[1];
+        removeY = posRemove[1];*/
 
         /*Log.d("ChatHead", "chatHeadX: " + chatHeadX);
         Log.d("ChatHead", "chatHeadY: " + chatHeadY);
         Log.d("ChatHead", "removeX: " + removeX);
         Log.d("ChatHead", "removeY: " + removeY);*/
 
-        return (chatHeadY + chatHead.getHeight() >= removeY &&
+        return ((chatHeadX >= boundLeft && chatHeadX <= boundRight) && chatHeadY >= boundTop);
+
+
+
+        /*return (chatHeadY + chatHead.getHeight() >= removeY &&
                 chatHeadX <= removeX + removeView.getWidth() &&
-                chatHeadX + chatHead.getWidth() >= removeX);
+                chatHeadX + chatHead.getWidth() >= removeX);*/
 
 
     }
@@ -235,6 +272,10 @@ public class ChatHeadService extends Service {
         display.getSize(size);
         return size.y;
 
+    }
+
+    private int getStatusBarHeight() {
+        return (int) Math.ceil(25 * getApplicationContext().getResources().getDisplayMetrics().density);
     }
 
 
