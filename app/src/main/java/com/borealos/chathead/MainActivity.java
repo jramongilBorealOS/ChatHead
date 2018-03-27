@@ -38,7 +38,7 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public void onClick(View view) {
-                startService(new Intent(MainActivity.this, ChatHeadService.class));
+                startService(new Intent(MainActivity.this, ChatService.class));
                 finish();
             }
         });
