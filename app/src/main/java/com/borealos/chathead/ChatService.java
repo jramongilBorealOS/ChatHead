@@ -6,6 +6,7 @@ import android.graphics.PixelFormat;
 import android.graphics.Point;
 import android.os.Handler;
 import android.os.IBinder;
+import android.util.Log;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -17,7 +18,7 @@ public class ChatService extends Service {
     private WindowManager windowManager;
     private View chatheadView, removeView;
     private ImageView removeImg, chatheadImg;
-    private int x_init_cord, y_init_cord, x_init_margin, y_init_margin;
+    private int x_init_cord, y_init_cord, x_init_margin, y_init_margin, x_orig_chatHead, y_orig_chatHead;
     private Point szWindow = new Point();
 
     @Override
@@ -53,12 +54,13 @@ public class ChatService extends Service {
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH | WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS,
                 PixelFormat.TRANSLUCENT);
         params.gravity = Gravity.TOP | Gravity.START;
-        params.x = 0;
+        params.x = chatheadView.getWidth() / 2;
         params.y = 100;
+
         windowManager.addView(chatheadView, params);
 
         chatheadView.setOnTouchListener(new View.OnTouchListener() {
-            long time_start = 0, time_end = 0;
+            long initTouchTime = 0, finalTouchTime = 0;
             boolean isLongclick = false, inBounded = false;
             int remove_img_width = 0, remove_img_height = 0;
 
@@ -84,7 +86,7 @@ public class ChatService extends Service {
 
                 switch (event.getAction()) {
                     case MotionEvent.ACTION_DOWN:
-                        time_start = System.currentTimeMillis();
+                        initTouchTime = System.currentTimeMillis();
                         handler_longClick.postDelayed(runnable_longClick, 600);
 
                         remove_img_width = removeImg.getLayoutParams().width;
@@ -104,18 +106,20 @@ public class ChatService extends Service {
                         x_cord_Destination = x_init_margin + x_diff_move;
                         y_cord_Destination = y_init_margin + y_diff_move;
 
-                        if(isLongclick){
-                            int x_bound_left = szWindow.x / 2 - (int)(remove_img_width * 1.5);
-                            int x_bound_right = szWindow.x / 2 +  (int)(remove_img_width * 1.5);
-                            int y_bound_top = szWindow.y - (int)(remove_img_height * 1.5);
+                        if (isLongclick) {
 
-                            if((x_cord >= x_bound_left && x_cord <= x_bound_right) && y_cord >= y_bound_top){
+                            //define remove view bounds
+                            int x_bound_left = szWindow.x / 2 - (int) (remove_img_width * 1.5);
+                            int x_bound_right = szWindow.x / 2 + (int) (remove_img_width * 1.5);
+                            int y_bound_top = szWindow.y - (int) (remove_img_height * 1.5);
+
+                            if ((x_cord >= x_bound_left && x_cord <= x_bound_right) && y_cord >= y_bound_top) {
                                 inBounded = true;
 
                                 int x_cord_remove = (int) ((szWindow.x - (remove_img_height * 1.5)) / 2);
-                                int y_cord_remove = (int) (szWindow.y - ((remove_img_width * 1.5) + getStatusBarHeight() ));
+                                int y_cord_remove = (int) (szWindow.y - ((remove_img_width * 1.5) + getStatusBarHeight()));
 
-                                if(removeImg.getLayoutParams().height == remove_img_height){
+                                if (removeImg.getLayoutParams().height == remove_img_height) {
                                     removeImg.getLayoutParams().height = (int) (remove_img_height * 1.5);
                                     removeImg.getLayoutParams().width = (int) (remove_img_width * 1.5);
 
@@ -127,18 +131,18 @@ public class ChatService extends Service {
                                 }
 
                                 layoutParams.x = x_cord_remove + (Math.abs(removeView.getWidth() - chatheadView.getWidth())) / 2;
-                                layoutParams.y = y_cord_remove + (Math.abs(removeView.getHeight() - chatheadView.getHeight())) / 2 ;
+                                layoutParams.y = y_cord_remove + (Math.abs(removeView.getHeight() - chatheadView.getHeight())) / 2;
 
                                 windowManager.updateViewLayout(chatheadView, layoutParams);
                                 break;
-                            }else{
+                            } else {
                                 inBounded = false;
                                 removeImg.getLayoutParams().height = remove_img_height;
                                 removeImg.getLayoutParams().width = remove_img_width;
 
                                 WindowManager.LayoutParams param_remove = (WindowManager.LayoutParams) removeView.getLayoutParams();
                                 int x_cord_remove = (szWindow.x - removeView.getWidth()) / 2;
-                                int y_cord_remove = szWindow.y - (removeView.getHeight() + getStatusBarHeight() );
+                                int y_cord_remove = szWindow.y - (removeView.getHeight() + getStatusBarHeight());
 
                                 param_remove.x = x_cord_remove;
                                 param_remove.y = y_cord_remove;
@@ -146,13 +150,24 @@ public class ChatService extends Service {
                                 windowManager.updateViewLayout(removeView, param_remove);
                             }
 
+
                         }
 
+                        //define screen bounds
+                        int bound_top = chatheadView.getHeight();
+                        int bound_left = chatheadView.getWidth() / 2;
+                        int bound_right = szWindow.x - chatheadView.getWidth();
 
-                        layoutParams.x = x_cord_Destination;
-                        layoutParams.y = y_cord_Destination;
+                        if (x_cord / 2 > bound_left && x_cord < bound_right && y_cord > bound_top) {
+                            
+                            Log.d("ChatHead", String.valueOf(bound_left)+"("+String.valueOf(x_cord)+","+String.valueOf(y_cord)+")");
 
-                        windowManager.updateViewLayout(chatheadView, layoutParams);
+                            layoutParams.x = x_cord_Destination;
+                            layoutParams.y = y_cord_Destination;
+
+                            windowManager.updateViewLayout(chatheadView, layoutParams);
+                        }
+
                         break;
                     case MotionEvent.ACTION_UP:
                         isLongclick = false;
@@ -173,8 +188,8 @@ public class ChatService extends Service {
                         int y_diff = y_cord - y_init_cord;
 
                         if(Math.abs(x_diff) < 5 && Math.abs(y_diff) < 5){
-                            time_end = System.currentTimeMillis();
-                            if((time_end - time_start) < 300){
+                            finalTouchTime = System.currentTimeMillis();
+                            if((finalTouchTime - initTouchTime) < 500){
                                 chathead_click();
                             }
                         }
