@@ -19,7 +19,7 @@ public class ChatService extends Service {
     private View chatheadView, removeView;
     private ImageView removeImg, chatheadImg;
     private int x_init_cord, y_init_cord, x_init_margin, y_init_margin, x_orig_chatHead, y_orig_chatHead;
-    private Point szWindow = new Point();
+    private Point sizeWindow = new Point();
 
     @Override
     public void onCreate() {
@@ -27,7 +27,7 @@ public class ChatService extends Service {
 
         windowManager = (WindowManager) getSystemService(WINDOW_SERVICE);
 
-        windowManager.getDefaultDisplay().getSize(szWindow);
+        windowManager.getDefaultDisplay().getSize(sizeWindow);
 
 
         removeView = LayoutInflater.from(getApplicationContext()).inflate(R.layout.remove, null);
@@ -109,15 +109,15 @@ public class ChatService extends Service {
                         if (isLongclick) {
 
                             //define remove view bounds
-                            int x_bound_left = szWindow.x / 2 - (int) (remove_img_width * 1.5);
-                            int x_bound_right = szWindow.x / 2 + (int) (remove_img_width * 1.5);
-                            int y_bound_top = szWindow.y - (int) (remove_img_height * 1.5);
+                            int x_bound_left = sizeWindow.x / 2 - (int) (remove_img_width * 1.5);
+                            int x_bound_right = sizeWindow.x / 2 + (int) (remove_img_width * 1.5);
+                            int y_bound_top = sizeWindow.y - (int) (remove_img_height * 1.5);
 
                             if ((x_cord >= x_bound_left && x_cord <= x_bound_right) && y_cord >= y_bound_top) {
                                 inBounded = true;
 
-                                int x_cord_remove = (int) ((szWindow.x - (remove_img_height * 1.5)) / 2);
-                                int y_cord_remove = (int) (szWindow.y - ((remove_img_width * 1.5) + getStatusBarHeight()));
+                                int x_cord_remove = (int) ((sizeWindow.x - (remove_img_height * 1.5)) / 2);
+                                int y_cord_remove = (int) (sizeWindow.y - ((remove_img_width * 1.5) + getStatusBarHeight()));
 
                                 if (removeImg.getLayoutParams().height == remove_img_height) {
                                     removeImg.getLayoutParams().height = (int) (remove_img_height * 1.5);
@@ -141,8 +141,8 @@ public class ChatService extends Service {
                                 removeImg.getLayoutParams().width = remove_img_width;
 
                                 WindowManager.LayoutParams param_remove = (WindowManager.LayoutParams) removeView.getLayoutParams();
-                                int x_cord_remove = (szWindow.x - removeView.getWidth()) / 2;
-                                int y_cord_remove = szWindow.y - (removeView.getHeight() + getStatusBarHeight());
+                                int x_cord_remove = (sizeWindow.x - removeView.getWidth()) / 2;
+                                int y_cord_remove = sizeWindow.y - (removeView.getHeight() + getStatusBarHeight());
 
                                 param_remove.x = x_cord_remove;
                                 param_remove.y = y_cord_remove;
@@ -154,12 +154,12 @@ public class ChatService extends Service {
                         }
 
                         //define screen bounds
-                        int bound_top = chatheadView.getHeight();
+                        int bound_top = chatheadView.getHeight() / 2 + getStatusBarHeight();
                         int bound_left = chatheadView.getWidth() / 2;
-                        int bound_right = szWindow.x - chatheadView.getWidth();
+                        int bound_right = sizeWindow.x - chatheadView.getWidth();
 
                         if (x_cord / 2 > bound_left && x_cord < bound_right && y_cord > bound_top) {
-                            
+
                             Log.d("ChatHead", String.valueOf(bound_left)+"("+String.valueOf(x_cord)+","+String.valueOf(y_cord)+")");
 
                             layoutParams.x = x_cord_Destination;
@@ -170,6 +170,10 @@ public class ChatService extends Service {
 
                         break;
                     case MotionEvent.ACTION_UP:
+
+                        x_cord = (int) event.getRawX();
+                        y_cord = (int) event.getRawY();
+
                         isLongclick = false;
                         removeView.setVisibility(View.GONE);
                         removeImg.getLayoutParams().height = remove_img_height;
@@ -189,7 +193,7 @@ public class ChatService extends Service {
 
                         if(Math.abs(x_diff) < 5 && Math.abs(y_diff) < 5){
                             finalTouchTime = System.currentTimeMillis();
-                            if((finalTouchTime - initTouchTime) < 500){
+                            if((finalTouchTime - initTouchTime) < 300){
                                 chathead_click();
                             }
                         }
@@ -199,8 +203,8 @@ public class ChatService extends Service {
                         int BarHeight =  getStatusBarHeight();
                         if (y_cord_Destination < 0) {
                             y_cord_Destination = 0;
-                        } else if (y_cord_Destination + (chatheadView.getHeight() + BarHeight) > szWindow.y) {
-                            y_cord_Destination = szWindow.y - (chatheadView.getHeight() + BarHeight );
+                        } else if (y_cord_Destination + (chatheadView.getHeight() + BarHeight) > sizeWindow.y) {
+                            y_cord_Destination = sizeWindow.y - (chatheadView.getHeight() + BarHeight );
                         }
                         layoutParams.y = y_cord_Destination;
 
@@ -230,8 +234,8 @@ public class ChatService extends Service {
     private void chathead_longclick(){
 
         WindowManager.LayoutParams param_remove = (WindowManager.LayoutParams) removeView.getLayoutParams();
-        int x_cord_remove = (szWindow.x - removeView.getWidth()) / 2;
-        int y_cord_remove = szWindow.y - (removeView.getHeight() + getStatusBarHeight() );
+        int x_cord_remove = (sizeWindow.x - removeView.getWidth()) / 2;
+        int y_cord_remove = sizeWindow.y - (removeView.getHeight() + getStatusBarHeight() );
 
         param_remove.x = x_cord_remove;
         param_remove.y = y_cord_remove;
