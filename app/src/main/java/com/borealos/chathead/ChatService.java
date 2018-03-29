@@ -30,6 +30,7 @@ public class ChatService extends Service {
         windowManager.getDefaultDisplay().getSize(sizeWindow);
 
 
+
         removeView = LayoutInflater.from(getApplicationContext()).inflate(R.layout.remove, null);
         WindowManager.LayoutParams paramRemove = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
